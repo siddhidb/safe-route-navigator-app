@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { CrimeData, RouteOptions, SafetyZone } from '@/types';
 
@@ -147,21 +146,21 @@ export const getRouteOptions = async (
     return {
       safeRoute: {
         coordinates: [source, destination],
-        safety: 'safe',
+        safety: 'safe' as const,
         distance: '5.2 miles',
         time: '18 mins',
         safety_score: 8.5
       },
       normalRoute: {
         coordinates: [source, destination],
-        safety: 'normal',
+        safety: 'normal' as const,
         distance: '4.5 miles',
         time: '15 mins',
         safety_score: 6.7
       },
       unsafeRoute: {
         coordinates: [source, destination],
-        safety: 'unsafe',
+        safety: 'unsafe' as const,
         distance: '4.2 miles',
         time: '12 mins',
         safety_score: 4.2
@@ -227,7 +226,7 @@ const generateSafeRoute = (
   
   return {
     coordinates: [source, ...waypoints, destination],
-    safety: 'safe',
+    safety: 'safe' as const,
     distance: `${distance.toFixed(1)} km`,
     time: `${time} mins`,
     safety_score: safetyScore
@@ -261,7 +260,7 @@ const generateNormalRoute = (
   
   return {
     coordinates: [source, ...waypoints, destination],
-    safety: 'normal',
+    safety: 'normal' as const,
     distance: `${distance.toFixed(1)} km`,
     time: `${time} mins`,
     safety_score: safetyScore
@@ -295,7 +294,7 @@ const generateFastRoute = (
   
   return {
     coordinates: [source, ...waypoints, destination],
-    safety: 'unsafe',
+    safety: 'unsafe' as const,
     distance: `${distance.toFixed(1)} km`,
     time: `${time} mins`,
     safety_score: safetyScore
