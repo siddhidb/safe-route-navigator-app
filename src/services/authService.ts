@@ -1,9 +1,20 @@
 
-import { supabase } from '@/lib/supabase';
-import { useToast } from "@/components/ui/use-toast";
+import { supabase, isDevelopmentMode } from '@/lib/supabase';
 
 // Register new user
 export const registerUser = async (email: string, password: string, username: string) => {
+  if (isDevelopmentMode()) {
+    // For development mode, simulate registration
+    const mockUser = { 
+      id: 'dev-user-id', 
+      email,
+      user_metadata: { username }
+    };
+    localStorage.setItem('devUser', JSON.stringify(mockUser));
+    localStorage.setItem('isLoggedIn', 'true');
+    return { success: true, user: mockUser };
+  }
+
   try {
     // Register the user with Supabase Auth
     const { data, error } = await supabase.auth.signUp({
@@ -37,6 +48,22 @@ export const registerUser = async (email: string, password: string, username: st
 
 // Login user
 export const loginUser = async (email: string, password: string) => {
+  if (isDevelopmentMode()) {
+    // For development mode, simulate login
+    const mockUser = { 
+      id: 'dev-user-id', 
+      email,
+      user_metadata: { username: email.split('@')[0] }
+    };
+    localStorage.setItem('devUser', JSON.stringify(mockUser));
+    localStorage.setItem('isLoggedIn', 'true');
+    return { 
+      success: true, 
+      session: { user: mockUser },
+      user: mockUser 
+    };
+  }
+
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -54,6 +81,13 @@ export const loginUser = async (email: string, password: string) => {
 
 // Log out user
 export const logoutUser = async () => {
+  if (isDevelopmentMode()) {
+    // For development mode, clear local storage
+    localStorage.removeItem('devUser');
+    localStorage.removeItem('isLoggedIn');
+    return { success: true };
+  }
+
   try {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
@@ -66,6 +100,24 @@ export const logoutUser = async () => {
 
 // Get user profile
 export const getUserProfile = async (userId: string) => {
+  if (isDevelopmentMode()) {
+    // For development mode, get from localStorage
+    const devUser = localStorage.getItem('devUser');
+    if (devUser) {
+      const user = JSON.parse(devUser);
+      return { 
+        success: true, 
+        profile: {
+          id: user.id,
+          username: user.user_metadata?.username || user.email?.split('@')[0],
+          email: user.email,
+          created_at: new Date().toISOString()
+        } 
+      };
+    }
+    return { success: false, error: 'User not found' };
+  }
+
   try {
     const { data, error } = await supabase
       .from('profiles')

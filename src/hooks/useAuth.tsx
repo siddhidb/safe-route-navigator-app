@@ -1,6 +1,6 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isDevelopmentMode } from '@/lib/supabase';
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
 
@@ -24,6 +24,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Check active sessions and set the user
     const getSession = async () => {
       setLoading(true);
+      
+      if (isDevelopmentMode()) {
+        // In development mode with placeholder credentials, check localStorage directly
+        const storedUser = localStorage.getItem('devUser');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+          localStorage.setItem('isLoggedIn', 'true');
+        } else {
+          localStorage.removeItem('isLoggedIn');
+        }
+        setLoading(false);
+        return;
+      }
+      
+      // Production mode with real Supabase
       const { data: { session } } = await supabase.auth.getSession();
       
       setUser(session?.user || null);
@@ -62,6 +77,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
+      
+      if (isDevelopmentMode()) {
+        // For development mode, simulate authentication
+        const mockUser = { 
+          id: 'dev-user-id', 
+          email,
+          user_metadata: { username: email.split('@')[0] }
+        };
+        setUser(mockUser);
+        localStorage.setItem('devUser', JSON.stringify(mockUser));
+        localStorage.setItem('isLoggedIn', 'true');
+        
+        toast({
+          title: "Development Mode Login",
+          description: "Logged in with mock credentials",
+        });
+        
+        navigate('/location');
+        return;
+      }
+      
+      // Production mode with real Supabase
       const { error, data } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) throw error;
@@ -91,7 +128,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setLoading(true);
       
-      // Sign up
+      if (isDevelopmentMode()) {
+        // For development mode, simulate registration
+        const mockUser = { 
+          id: 'dev-user-id', 
+          email,
+          user_metadata: { username }
+        };
+        setUser(mockUser);
+        localStorage.setItem('devUser', JSON.stringify(mockUser));
+        localStorage.setItem('isLoggedIn', 'true');
+        
+        toast({
+          title: "Development Mode Registration",
+          description: "Registered with mock credentials",
+        });
+        
+        navigate('/location');
+        return;
+      }
+      
+      // Production mode with real Supabase
       const { error, data } = await supabase.auth.signUp({ email, password });
       
       if (error) throw error;
@@ -131,7 +188,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       setLoading(true);
-      await supabase.auth.signOut();
+      
+      if (isDevelopmentMode()) {
+        // For development mode, clear local storage
+        localStorage.removeItem('devUser');
+        localStorage.removeItem('isLoggedIn');
+        setUser(null);
+      } else {
+        // Production mode with real Supabase
+        await supabase.auth.signOut();
+      }
+      
       localStorage.removeItem('isLoggedIn');
       navigate('/login');
       toast({
