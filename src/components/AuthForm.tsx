@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
+import useAuth from '@/hooks/useAuth';
 
 interface AuthFormProps {
   isLogin?: boolean;
@@ -11,62 +12,72 @@ interface AuthFormProps {
 
 const AuthForm: React.FC<AuthFormProps> = ({ isLogin = true }) => {
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { signIn, signUp, loading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
     // Validate input
-    if (!username || !password) {
+    if (isLogin && (!email || !password)) {
       toast({
         title: "Error",
         description: "Please fill in all fields",
         variant: "destructive"
       });
-      setLoading(false);
+      return;
+    } else if (!isLogin && (!username || !email || !password)) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive"
+      });
       return;
     }
 
     try {
-      // Simulate authentication
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('username', username);
-      
-      toast({
-        title: isLogin ? "Login Successful" : "Account Created",
-        description: `Welcome ${username}!`,
-      });
-      
-      navigate('/location');
+      if (isLogin) {
+        await signIn(email, password);
+      } else {
+        await signUp(email, password, username);
+      }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Authentication failed",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+      console.error('Authentication error:', error);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-xs mx-auto space-y-6 animate-fade-in">
+      {!isLogin && (
+        <div className="space-y-2">
+          <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+            Username
+          </label>
+          <Input
+            id="username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full bg-gray-100 border-gray-300"
+            placeholder="Enter your username"
+          />
+        </div>
+      )}
+      
       <div className="space-y-2">
-        <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-          Username
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          Email
         </label>
         <Input
-          id="username"
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="w-full bg-gray-100 border-gray-300"
-          placeholder="Enter your username"
+          placeholder="Enter your email"
         />
       </div>
       
