@@ -27,12 +27,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { data: { session } } = await supabase.auth.getSession();
       
       setUser(session?.user || null);
+      
+      // Set localStorage flag based on session
+      if (session?.user) {
+        localStorage.setItem('isLoggedIn', 'true');
+      } else {
+        localStorage.removeItem('isLoggedIn');
+      }
+      
       setLoading(false);
 
       // Set up listener for auth changes
       const { data: listener } = supabase.auth.onAuthStateChange(
         (_event, session) => {
           setUser(session?.user || null);
+          
+          // Update localStorage when auth state changes
+          if (session?.user) {
+            localStorage.setItem('isLoggedIn', 'true');
+          } else {
+            localStorage.removeItem('isLoggedIn');
+          }
         }
       );
 
@@ -47,9 +62,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) throw error;
+      
+      // Set login state in localStorage
+      localStorage.setItem('isLoggedIn', 'true');
       
       toast({
         title: "Login Successful",
@@ -63,6 +81,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: error.message || "An error occurred during login",
         variant: "destructive"
       });
+      localStorage.removeItem('isLoggedIn');
     } finally {
       setLoading(false);
     }
@@ -73,7 +92,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(true);
       
       // Sign up
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { error, data } = await supabase.auth.signUp({ email, password });
       
       if (error) throw error;
       
@@ -86,6 +105,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .insert([{ id: user.id, username, email }]);
           
         if (profileError) throw profileError;
+        
+        // Set login state in localStorage
+        localStorage.setItem('isLoggedIn', 'true');
       }
       
       toast({
@@ -100,6 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: error.message || "An error occurred during registration",
         variant: "destructive"
       });
+      localStorage.removeItem('isLoggedIn');
     } finally {
       setLoading(false);
     }
@@ -109,6 +132,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setLoading(true);
       await supabase.auth.signOut();
+      localStorage.removeItem('isLoggedIn');
       navigate('/login');
       toast({
         title: "Logged Out",

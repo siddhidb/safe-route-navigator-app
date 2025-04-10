@@ -10,6 +10,9 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
   
+  // Check both the user from context and the localStorage flag
+  const isAuthenticated = user || localStorage.getItem('isLoggedIn') === 'true';
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -18,7 +21,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
   
-  if (!user) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
   

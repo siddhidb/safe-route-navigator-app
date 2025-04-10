@@ -3,17 +3,18 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import AuthForm from '@/components/AuthForm';
+import useAuth from '@/hooks/useAuth';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Check if user is already logged in
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (isLoggedIn) {
+    if (user || localStorage.getItem('isLoggedIn') === 'true') {
       navigate('/location');
     }
-  }, [navigate]);
+  }, [navigate, user]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">

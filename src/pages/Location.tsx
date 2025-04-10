@@ -1,19 +1,11 @@
 
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import Header from '@/components/Header';
 import LocationForm from '@/components/LocationForm';
+import useAuth from '@/hooks/useAuth';
 
 const Location: React.FC = () => {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Check if user is logged in
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (!isLoggedIn) {
-      navigate('/login');
-    }
-  }, [navigate]);
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col bg-white">

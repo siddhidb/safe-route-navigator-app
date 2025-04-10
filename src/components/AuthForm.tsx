@@ -5,103 +5,209 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
 import useAuth from '@/hooks/useAuth';
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+
+// Define validation schemas
+const loginSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+});
+
+const registerSchema = z.object({
+  username: z.string().min(3, { message: "Username must be at least 3 characters" }),
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 interface AuthFormProps {
   isLogin?: boolean;
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ isLogin = true }) => {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { signIn, signUp, loading } = useAuth();
+  const { signIn, signUp } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Setup form with validation
+  const loginForm = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-    // Validate input
-    if (isLogin && (!email || !password)) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive"
-      });
-      return;
-    } else if (!isLogin && (!username || !email || !password)) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive"
-      });
-      return;
-    }
+  const registerForm = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      password: "",
+    },
+  });
 
+  const onLoginSubmit = async (data: LoginFormValues) => {
     try {
-      if (isLogin) {
-        await signIn(email, password);
-      } else {
-        await signUp(email, password, username);
-      }
+      setLoading(true);
+      await signIn(data.email, data.password);
     } catch (error) {
       console.error('Authentication error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRegisterSubmit = async (data: RegisterFormValues) => {
+    try {
+      setLoading(true);
+      await signUp(data.email, data.password, data.username);
+    } catch (error) {
+      console.error('Authentication error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-xs mx-auto space-y-6 animate-fade-in">
-      {!isLogin && (
-        <div className="space-y-2">
-          <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-            Username
-          </label>
-          <Input
-            id="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full bg-gray-100 border-gray-300"
-            placeholder="Enter your username"
-          />
-        </div>
-      )}
+    <div className="w-full max-w-xs mx-auto space-y-6 animate-fade-in">
+      <h2 className="text-2xl font-bold text-center mb-6">
+        {isLogin ? 'Login to Your Account' : 'Create a New Account'}
+      </h2>
       
-      <div className="space-y-2">
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email
-        </label>
-        <Input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full bg-gray-100 border-gray-300"
-          placeholder="Enter your email"
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Password
-        </label>
-        <Input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full bg-gray-100 border-gray-300"
-          placeholder="Enter your password"
-        />
-      </div>
+      {isLogin ? (
+        <Form {...loginForm}>
+          <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+            <FormField
+              control={loginForm.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Enter your email" 
+                      type="email" 
+                      className="bg-gray-100"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={loginForm.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Enter your password" 
+                      type="password" 
+                      className="bg-gray-100"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-      <Button
-        type="submit"
-        className="w-full bg-primary hover:bg-primary/90 text-white"
-        disabled={loading}
-      >
-        {loading ? 'Processing...' : isLogin ? 'Login' : 'Create Account'}
-      </Button>
+            <Button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary/90 text-white"
+              disabled={loading}
+            >
+              {loading ? 'Processing...' : 'Login'}
+            </Button>
+          </form>
+        </Form>
+      ) : (
+        <Form {...registerForm}>
+          <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+            <FormField
+              control={registerForm.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Choose a username" 
+                      type="text" 
+                      className="bg-gray-100"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={registerForm.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Enter your email" 
+                      type="email" 
+                      className="bg-gray-100"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={registerForm.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Create a password" 
+                      type="password" 
+                      className="bg-gray-100"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary/90 text-white"
+              disabled={loading}
+            >
+              {loading ? 'Processing...' : 'Create Account'}
+            </Button>
+          </form>
+        </Form>
+      )}
 
       {isLogin ? (
         <div className="text-center space-y-2">
@@ -127,7 +233,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ isLogin = true }) => {
           </button>
         </div>
       )}
-    </form>
+    </div>
   );
 };
 
